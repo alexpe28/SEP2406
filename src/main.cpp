@@ -32,7 +32,7 @@ void StartMeasure(lv_event_t* e)
     Imax = current;
     Umin = voltage;
     Umax = voltage;
-    dtostrf(current , 1 , 2 , buffer);
+    dtostrf(current , 1 , 1 , buffer);
     lv_label_set_text(ui_Label15 , buffer);
     lv_label_set_text(ui_Label17 , buffer);
     dtostrf(voltage , 1 , 2 , buffer1);
@@ -57,7 +57,7 @@ void readINA231Task(void* pvParameters)
 
         if ((fabs(current - current_prev)) > 0.1)
         {
-            dtostrf(current , 1 , 2 , buffer);
+            dtostrf(current , 1 , 1 , buffer);
             lv_label_set_text(ui_Label4 , buffer);
             current_prev = current;
             if (Imin > current)
