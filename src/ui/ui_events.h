@@ -10,6 +10,9 @@
 extern "C" {
 #endif
 
+void StopMeasure(lv_event_t * e);
+void StartMeasure(lv_event_t * e);
+
 #ifdef __cplusplus
 } /*extern "C"*/
 #endif

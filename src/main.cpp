@@ -1,52 +1,150 @@
 #include <Arduino.h>
-
 #include <esp32_smartdisplay.h>
 #include <ui/ui.h>
+#include <GyverINA.h>
 
-// void OnAddOneClicked(lv_event_t *e)
-// {
-//     static uint32_t cnt = 0;
-//     cnt++;
-//     lv_label_set_text_fmt(ui_lblCountValue, "%u", cnt);
-// }
+INA226 ina_One(0.19f , 1.0f , 0x40);
+INA226 ina_Two(0.19f , 1.0f , 0x44);
+TaskHandle_t readINATaskHandle = NULL;  // Хендл для управления задачей
 
-// void OnRotateClicked(lv_event_t *e)
-// {
-//     auto disp = lv_disp_get_default();
-//     auto rotation = (lv_display_rotation_t)((lv_disp_get_rotation(disp) + 1) % (LV_DISPLAY_ROTATION_270 + 1));
-//     lv_display_set_rotation(disp, rotation);
-// }
+char buffer[10];
+char buffer1[10];
+char buffer2[10];
+
+float power;
+float voltage;
+float current;
+
+float power_prev;
+float voltage_prev;
+float current_prev;
+
+float Imin;
+float Imax;
+float Umin;
+float Umax;
+
+void StartMeasure(lv_event_t* e)
+{
+    vTaskResume(readINATaskHandle);  // Возобновление задачи
+    Serial.println("INA231 Task resumed");
+    Imin = current;
+    Imax = current;
+    Umin = voltage;
+    Umax = voltage;
+    dtostrf(current , 1 , 2 , buffer);
+    lv_label_set_text(ui_Label15 , buffer);
+    lv_label_set_text(ui_Label17 , buffer);
+    dtostrf(voltage , 1 , 2 , buffer1);
+    lv_label_set_text(ui_Label11 , buffer1);
+    lv_label_set_text(ui_Label13 , buffer1);
+}
+
+void StopMeasure(lv_event_t* e)
+{
+    vTaskSuspend(readINATaskHandle);  // Приостановка задачи
+    Serial.println("INA231 Task suspended");
+}
+
+// Функция для опроса INA231
+void readINA231Task(void* pvParameters)
+{
+    while (1)
+    {
+        current = ina_One.getCurrent() * 1000;  // Ток в мА
+        voltage = ina_One.getVoltage();        // Напряжение в В
+        power = ina_One.getPower() * 1000;      // Мощность в мВт
+
+        if ((fabs(current - current_prev)) > 0.1)
+        {
+            dtostrf(current , 1 , 2 , buffer);
+            lv_label_set_text(ui_Label4 , buffer);
+            current_prev = current;
+            if (Imin > current)
+            {
+                Imin = current;
+                lv_label_set_text(ui_Label15 , buffer);
+            }
+            if (Imax < current)
+            {
+                Imax = current;
+                lv_label_set_text(ui_Label17 , buffer);
+            }
+        }
+
+        if ((fabs(voltage - voltage_prev)) > 0.01)
+        {
+            dtostrf(voltage , 1 , 2 , buffer1);
+            lv_label_set_text(ui_Label5 , buffer1);
+            voltage_prev = voltage;
+            if (Umin > voltage)
+            {
+                Umin = voltage;
+                lv_label_set_text(ui_Label11 , buffer1);
+            }
+            if (Umax < voltage)
+            {
+                Umax = voltage;
+                lv_label_set_text(ui_Label13 , buffer1);
+            }
+        }
+
+        if ((fabs(power - power_prev)) > 1)
+        {
+            dtostrf(power , 1 , 2 , buffer2);
+            lv_label_set_text(ui_Label6 , buffer2);
+            power_prev = power;
+        }
+
+
+
+        vTaskDelay(240);
+    }
+}
 
 void setup()
 {
-// #ifdef ARDUINO_USB_CDC_ON_BOOT
-//     delay(5000);
-// #endif
     Serial.begin(115200);
+
     Serial.setDebugOutput(true);
-    log_i("Board: %s", BOARD_NAME);
-    log_i("CPU: %s rev%d, CPU Freq: %d Mhz, %d core(s)", ESP.getChipModel(), ESP.getChipRevision(), getCpuFrequencyMhz(), ESP.getChipCores());
-    log_i("Free heap: %d bytes", ESP.getFreeHeap());
-    log_i("Free PSRAM: %d bytes", ESP.getPsramSize());
-    log_i("SDK version: %s", ESP.getSdkVersion());
+    log_i("Board: %s" , BOARD_NAME);
+    log_i("CPU: %s rev%d, CPU Freq: %d Mhz, %d core(s)" , ESP.getChipModel() , ESP.getChipRevision() , getCpuFrequencyMhz() , ESP.getChipCores());
+    log_i("Free heap: %d bytes" , ESP.getFreeHeap());
+    log_i("Free PSRAM: %d bytes" , ESP.getPsramSize());
+    log_i("SDK version: %s" , ESP.getSdkVersion());
 
     smartdisplay_init();
-
     __attribute__((unused)) auto disp = lv_disp_get_default();
-    // lv_disp_set_rotation(disp, LV_DISP_ROT_90);
-    // lv_disp_set_rotation(disp, LV_DISP_ROT_180);
-    // lv_disp_set_rotation(disp, LV_DISP_ROT_270);
 
+    // Проверяем наличие и инициализируем INA231
+    if (ina_One.begin(21 , 22))
+    { // ina_One.begin(4, 5) // Для ESP32/ESP8266 можно указать пины I2C
+        Serial.println(F("ina_One connected!"));
+        Serial.print(F("Calibration value ina_One: "));
+        Serial.println(ina_One.getCalibration());
+    }
+    else
+    {
+        Serial.println(F("ina_One not found!"));
+        while (1)
+            delay(1000);
+    }
+    ina_One.adjCalibration(240);
+    // ina_One.setCalibration(300);
     ui_init();
 
-    // To use third party libraries, enable the define in lv_conf.h: #define LV_USE_QRCODE 1
-    // auto ui_qrcode = lv_qrcode_create(ui_scrMain);
-    // lv_qrcode_set_size(ui_qrcode, 100);
-    // lv_qrcode_set_dark_color(ui_qrcode, lv_color_black());
-    // lv_qrcode_set_light_color(ui_qrcode, lv_color_white());
-    // const char *qr_data = "https://github.com/rzeldent/esp32-smartdisplay";
-    // lv_qrcode_update(ui_qrcode, qr_data, strlen(qr_data));
-    // lv_obj_center(ui_qrcode);
+    current = ina_One.getCurrent() * 1000;  // Ток в мА
+    voltage = ina_One.getVoltage();        // Напряжение в В
+    power = ina_One.getPower() * 1000;      // Мощность в мВт
+
+    Imin = current;
+    Imax = current;
+    Umin = voltage;
+    Umax = voltage;
+
+    xTaskCreate(readINA231Task , "INA231 Task" , 4096 , NULL , 1 , &readINATaskHandle);
+    // vTaskSuspend(readINATaskHandle);  // Приостановка задачи
+    // Serial.println("INA231 Task suspended");
 }
 
 ulong next_millis;
@@ -58,26 +156,12 @@ void loop()
     if (now > next_millis)
     {
         next_millis = now + 500;
-
-        // char text_buffer[32];
-        // sprintf(text_buffer, "%lu", now);
-        // lv_label_set_text(ui_lblMillisecondsValue, text_buffer);
-
-// #ifdef BOARD_HAS_RGB_LED
-//         auto const rgb = (now / 2000) % 8;
-//         smartdisplay_led_set_rgb(rgb & 0x01, rgb & 0x02, rgb & 0x04);
-// #endif
-
-// #ifdef BOARD_HAS_CDS
-//         auto cdr = analogReadMilliVolts(CDS);
-//         sprintf(text_buffer, "%d", cdr);
-//         lv_label_set_text(ui_lblCdrValue, text_buffer);
-// #endif
     }
-
     // Update the ticker
     lv_tick_inc(now - lv_last_tick);
     lv_last_tick = now;
     // Update the UI
     lv_timer_handler();
+
+    vTaskDelay(5 / portTICK_PERIOD_MS);
 }

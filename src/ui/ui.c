@@ -9,17 +9,44 @@
 ///////////////////// VARIABLES ////////////////////
 
 
-// SCREEN: ui_Screen1
-void ui_Screen1_screen_init(void);
-lv_obj_t *ui_Screen1;
-lv_obj_t *ui_Panel3;
-lv_obj_t *ui_Button1;
-lv_obj_t *ui_Label1;
-lv_obj_t *ui_Button2;
-lv_obj_t *ui_Label2;
-lv_obj_t *ui_Button3;
-lv_obj_t *ui_Label3;
-lv_obj_t *ui____initial_actions0;
+// SCREEN: ui_Screen2
+void ui_Screen2_screen_init(void);
+lv_obj_t * ui_Screen2;
+lv_obj_t * ui_Panel1s2;
+lv_obj_t * ui_PanelTok;
+lv_obj_t * ui_Label4;
+lv_obj_t * ui_PanelU;
+lv_obj_t * ui_Label5;
+lv_obj_t * ui_PanelW;
+lv_obj_t * ui_Label6;
+lv_obj_t * ui_Label1;
+lv_obj_t * ui_Label2;
+lv_obj_t * ui_Label3;
+void ui_event_Button1(lv_event_t * e);
+lv_obj_t * ui_Button1;
+lv_obj_t * ui_Image3;
+lv_obj_t * ui_Button2;
+lv_obj_t * ui_Image5;
+void ui_event_Button3(lv_event_t * e);
+lv_obj_t * ui_Button3;
+lv_obj_t * ui_Image6;
+lv_obj_t * ui_Label7;
+lv_obj_t * ui_Label8;
+lv_obj_t * ui_Label9;
+lv_obj_t * ui_Panel1;
+lv_obj_t * ui_Label10;
+lv_obj_t * ui_Label11;
+lv_obj_t * ui_Label12;
+lv_obj_t * ui_Label13;
+lv_obj_t * ui_Panel2;
+lv_obj_t * ui_Label14;
+lv_obj_t * ui_Label15;
+lv_obj_t * ui_Label16;
+lv_obj_t * ui_Label17;
+lv_obj_t * ui_Panel3;
+lv_obj_t * ui_Label18;
+lv_obj_t * ui____initial_actions0;
+const lv_image_dsc_t * ui_imgset_processor[1] = {&ui_img_processor2_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -29,15 +56,32 @@ lv_obj_t *ui____initial_actions0;
 ///////////////////// ANIMATIONS ////////////////////
 
 ///////////////////// FUNCTIONS ////////////////////
+void ui_event_Button1(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        StopMeasure(e);
+    }
+}
+void ui_event_Button3(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        StartMeasure(e);
+    }
+}
 
 ///////////////////// SCREENS ////////////////////
 
-void ui_init( void )
+void ui_init(void)
 {
-lv_disp_t *dispp = lv_display_get_default();
-lv_theme_t *theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED), true, LV_FONT_DEFAULT);
-lv_disp_set_theme(dispp, theme);
-ui_Screen1_screen_init();
-ui____initial_actions0 = lv_obj_create(NULL);
-lv_disp_load_scr( ui_Screen1);
+    lv_disp_t * dispp = lv_display_get_default();
+    lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
+                                               true, LV_FONT_DEFAULT);
+    lv_disp_set_theme(dispp, theme);
+    ui_Screen2_screen_init();
+    ui____initial_actions0 = lv_obj_create(NULL);
+    lv_disp_load_scr(ui_Screen2);
 }
