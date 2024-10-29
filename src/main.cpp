@@ -2,27 +2,11 @@
 #include <esp32_smartdisplay.h>
 #include <ui/ui.h>
 #include <GyverINA.h>
+#include <config.h>
 
 INA226 ina_One(0.19f , 1.0f , 0x40);
 INA226 ina_Two(0.19f , 1.0f , 0x44);
 TaskHandle_t readINATaskHandle = NULL;  // Хендл для управления задачей
-
-char buffer[10];
-char buffer1[10];
-char buffer2[10];
-
-float power;
-float voltage;
-float current;
-
-float power_prev;
-float voltage_prev;
-float current_prev;
-
-float Imin;
-float Imax;
-float Umin;
-float Umax;
 
 void StartMeasure(lv_event_t* e)
 {
@@ -141,6 +125,22 @@ void setup()
     Imax = current;
     Umin = voltage;
     Umax = voltage;
+
+    // Воспроизведение мелодии
+    for (int i = 0; i < 1; i++)
+    {
+        int frequency = melody[i];
+        int duration = durations[i];
+
+        // Воспроизведение одной ноты с нужной частотой
+        tone(SPEAK , frequency , duration);
+
+        // Задержка перед воспроизведением следующей ноты
+        delay(duration * 1.3); // Немного увеличиваем задержку для чёткости звука
+    }
+
+    // Выключение звука
+    noTone(SPEAK);
 
     xTaskCreate(readINA231Task , "INA231 Task" , 4096 , NULL , 1 , &readINATaskHandle);
     // vTaskSuspend(readINATaskHandle);  // Приостановка задачи
